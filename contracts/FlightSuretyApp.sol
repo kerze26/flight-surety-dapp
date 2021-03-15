@@ -198,23 +198,12 @@ contract FlightSuretyApp {
     // they fetch data and submit a response
     event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
 
-
     // Register an oracle with the contract
-    function registerOracle
-                            (
-                            )
-                            external
-                            payable
-    {
-        // Require registration fee
-        require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
-
-        uint8[3] memory indexes = generateIndexes(msg.sender);
-
-        oracles[msg.sender] = Oracle({
-                                        isRegistered: true,
-                                        indexes: indexes
-                                    });
+    function registerOracle () external payable {
+      // Require registration fee
+      require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
+      uint8[3] memory indexes = generateIndexes(msg.sender);
+      oracles[msg.sender] = Oracle({ isRegistered: true, indexes: indexes });
     }
 
     function getMyIndexes
