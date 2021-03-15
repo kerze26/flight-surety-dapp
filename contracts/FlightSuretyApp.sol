@@ -26,11 +26,20 @@ contract FlightSuretyApp {
 
     address private contractOwner; // Account used to deploy contract
 
+    struct Airline {
+      bool exists;
+      address airlineAddress;
+      int votes;
+      bool registered;
+      mapping(address => int) voters;
+    }
+    mapping(address => Airline) private airlines;
+
     struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;        
-        address airline;
+      bool isRegistered;
+      uint8 statusCode;
+      uint256 updatedTimestamp;        
+      address airline;
     }
     mapping(bytes32 => Flight) private flights;
 
@@ -48,20 +57,18 @@ contract FlightSuretyApp {
     *      This is used on all state changing functions to pause the contract in 
     *      the event there is an issue that needs to be fixed
     */
-    modifier requireIsOperational() 
-    {
-         // Modify to call data contract's status
-        require(isOperational(), "Contract is currently not operational");  
-        _;  // All modifiers require an "_" which indicates where the function body will be added
+    modifier requireIsOperational() {
+       // Modify to call data contract's status
+      require(isOperational(), "Contract is currently not operational");  
+      _;  // All modifiers require an "_" which indicates where the function body will be added
     }
 
     /**
     * @dev Modifier that requires the "ContractOwner" account to be the function caller
     */
-    modifier requireContractOwner()
-    {
-        require(msg.sender == contractOwner, "Caller is not contract owner");
-        _;
+    modifier requireContractOwner() {
+      require(msg.sender == contractOwner, "Caller is not contract owner");
+      _;
     }
 
     /********************************************************************************************/
@@ -81,12 +88,8 @@ contract FlightSuretyApp {
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() 
-                            public 
-                            pure 
-                            returns(bool) 
-    {
-        return true;  // Modify to call data contract's status
+    function isOperational() public pure returns(bool) {
+      return flightSuretyData.isOperational(); // Modify to call data contract's status
     }
 
     /********************************************************************************************/
@@ -98,16 +101,21 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline
-                            (   
-                            )
-                            external
-                            pure
-                            returns(bool success, uint256 votes)
-    {
-        return (success, 0);
+    function registerAirline (address newAirline) external pure returns(bool success, uint256 votes) {
+      if (airlines[newAirline].exists) {
+        require(airline[newAirline].voters[msg.sender] != 1, "This user has already registered this airline once.");
+        airlines[newAirline].voters[msg.sender] = 1;
+        airlines[newAirline].voters++;
+      } else {
+        airlines[newAirline] = Airline(true, newAirline, 1, false);
+        airlines[newAirline].voters[msg.sender] = 1;
+      }
+      int airlinesCount = flightSuretyData.returnAirlinesCount();
+      if ((airlinesCount <= 4) || (airlines[newAirline].voters >= airlinesCount)) {
+        airlines[newAirline].registered = flightSuretyData.registerAirline(newAirline, msg.sender);
+      }
+      return (airline[newAirline].registered = airline[newAirline].votes);
     }
-
 
    /**
     * @dev Register a future flight for insuring.
