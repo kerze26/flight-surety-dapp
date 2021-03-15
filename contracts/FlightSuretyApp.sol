@@ -274,3 +274,12 @@ contract FlightSuretyApp {
     }
 // endregion
 }
+
+// Region Data Interface
+contract FlightSuretyData {
+  function isOperational() external returns(bool);
+  function returnAirlinesCount() external view returns(int);
+  function registerAirline(address newAirline, address oldAddress) external returns(bool);
+  function fundAirline(address airline, uint256 amount) public payable;
+  function creditInsurees(address airline, string flight, uint256 timestamp) external;
+}
