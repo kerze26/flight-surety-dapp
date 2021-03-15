@@ -11,7 +11,25 @@ contract FlightSuretyData {
 
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
+    mapping(address => bool) private authorizedCallers; 
+    
+    struct Airlines {
+        int airlineCount;
+        mapping(address => int) airlineList;
+        mapping(address => uint256) airlineMoney;
+    }
+    Airlines private airlines;
 
+    struct Insuree {
+        address insuree;
+        uint256 amount;
+    }
+    mapping(bytes32 => Insuree[]) insurees;
+
+    mapping(address => uint256) payouts;
+
+    uint256 totalFund;
+ 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -23,10 +41,17 @@ contract FlightSuretyData {
     */
     constructor
                                 (
+                                    address firstAirline
                                 ) 
                                 public 
     {
         contractOwner = msg.sender;
+
+        airlines = Airlines(1);
+        airlines.airlineList[firstAirline] = 1;
+        airlines.airlineMoney[firstAirline] = 10;
+
+        totalFund = 10;
     }
 
     /********************************************************************************************/
@@ -89,6 +114,11 @@ contract FlightSuretyData {
         operational = mode;
     }
 
+    function authorizeCaller(address callerAddress) external requireContractOwner {
+        authorizedCallers[callerAddress] = true;
+    }
+
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -99,25 +129,50 @@ contract FlightSuretyData {
     *
     */   
     function registerAirline
-                            (   
+                            (
+                                address newAirline,
+                                address oldAirline
                             )
-                            external
-                            pure
+                            public
+                            requireIsOperational
+                            returns(bool)
     {
+        require(isAirline(oldAirline), "New airline can only be registered by a registered airline.");
+        require(!isAirline(newAirline), "New airline already registered.");
+        airlines.airlineList[newAirline] = 1;
+        airlines.airlineCount++;
+        return true;
     }
 
+    function fundAirline(address airline, uint256 amount) public payable {
+        totalFund = totalFund.add(amount);
+        airlines.airlineMoney[airline] = airlines.airlineMoney[airline].add(amount);
+    }
+
+    function isAirline(address airline) public view returns(bool) {
+        return ((airlines.airlineList[airline] == 1) && (airlines.airlineMoney[airline] >= 10));
+    }
+
+    function returnAirlinesCount() public view returns(int) {
+        return airlines.airlineCount;
+    }
 
    /**
     * @dev Buy insurance for a flight
     *
     */   
     function buy
-                            (                             
+                            (      
+                                address airline,
+                                string flight,
+                                uint256 timestamp
                             )
                             external
                             payable
     {
-
+        bytes32 flightKey = keccak256(abi.encodePacked(airline, flight, timestamp));
+        require(msg.value <= 1, "Insurance amount cannot surpass 1 eth.");
+        insurees[flightKey].push(Insuree(msg.sender, msg.value));
     }
 
     /**
@@ -125,10 +180,24 @@ contract FlightSuretyData {
     */
     function creditInsurees
                                 (
+                                    address airline,
+                                    string flight,
+                                    uint256 timestamp
                                 )
                                 external
-                                pure
     {
+        bytes32 flightKey = keccak256(abi.encodePacked(airline, flight, timestamp));
+        uint256 payoutAmt = 0;
+
+        for (uint256 i = 0; i < insurees[flightKey].length; i++) {
+            payoutAmt = payoutAmt.add(insurees[flightKey][i].amount);
+            payouts[insurees[flightKey][i].insuree] = payouts[insurees[flightKey][i].insuree].add((3 * insurees[flightKey][i].amount)/2);
+        }
+        totalFund = totalFund.sub((3 * payoutAmt)/2);
+        
+        delete insurees[flightKey];
+        // Insuree[] storage emptyList;
+        // insurees[flightKey] = emptyList;
     }
     
 
@@ -140,8 +209,10 @@ contract FlightSuretyData {
                             (
                             )
                             external
-                            pure
     {
+        uint256 amt = payouts[msg.sender];
+        payouts[msg.sender] = payouts[msg.sender].sub(amt);
+        msg.sender.transfer(amt);
     }
 
    /**
