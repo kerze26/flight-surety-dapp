@@ -12,7 +12,6 @@ export default class Contract {
         this.owner = null;
         this.airlines = [];
         this.passengers = [];
-        this.firstAirline = "0xf17f52151EbEF6C7334FAD080c5704D77216b732";
     }
 
     initialize(callback) {
@@ -23,9 +22,8 @@ export default class Contract {
             let counter = 1;
             
             while(this.airlines.length < 5) {
-                let cur = accts[counter++];
-                this.airlines.push(cur);
-                }
+                this.airlines.push(accts[counter++]);
+            }
 
             while(this.passengers.length < 5) {
                 this.passengers.push(accts[counter++]);

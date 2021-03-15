@@ -9,8 +9,8 @@ contract FlightSuretyData {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    address private contractOwner;                                      // Account used to deploy contract
-    bool private operational = true;                                    // Blocks all state changes throughout the contract if false
+    address private contractOwner; // Account used to deploy contract
+    bool private operational = true; // Blocks all state changes throughout the contract if false
     mapping(address => bool) private authorizedCallers; 
     
     struct Airlines {
@@ -228,16 +228,11 @@ contract FlightSuretyData {
     {
     }
 
-    function getFlightKey
-                        (
-                            address airline,
-                            string memory flight,
-                            uint256 timestamp
-                        )
-                        pure
-                        internal
-                        returns(bytes32) 
-    {
+    function getFlightKey (
+      address airline, 
+      string memory flight, 
+      uint256 timestamp
+      ) pure internal returns(bytes32) {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
@@ -245,13 +240,8 @@ contract FlightSuretyData {
     * @dev Fallback function for funding smart contract.
     *
     */
-    function() 
-                            external 
-                            payable 
-    {
-        fund();
+    function() external payable {
+      fund();
     }
 
-
 }
-

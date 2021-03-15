@@ -25,11 +25,12 @@ import './flightsurety.css';
                 display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: result.flight + ' ' + result.timestamp} ]);
             });
         })
-
+    
     });
     
 
 })();
+
 
 function display(title, description, results) {
     let displayDiv = DOM.elid("display-wrapper");
