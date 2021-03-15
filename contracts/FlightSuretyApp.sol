@@ -206,20 +206,10 @@ contract FlightSuretyApp {
       oracles[msg.sender] = Oracle({ isRegistered: true, indexes: indexes });
     }
 
-    function getMyIndexes
-                            (
-                            )
-                            view
-                            external
-                            returns(uint8[3])
-    {
-        require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
-
-        return oracles[msg.sender].indexes;
+    function getMyIndexes () view external returns(uint8[3]) {
+      require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
+      return oracles[msg.sender].indexes;
     }
-
-
-
 
     // Called by oracle when a response is available to an outstanding request
     // For the response to be accepted, there must be a pending request that is open
