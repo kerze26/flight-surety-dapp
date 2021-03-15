@@ -98,12 +98,8 @@ contract FlightSuretyApp {
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() 
-                            public 
-                            pure 
-                            returns(bool) 
-    {
-        return true;  // Modify to call data contract's status
+    function isOperational() public returns(bool) {
+        return operational;
     }
 
     /********************************************************************************************/
@@ -115,16 +111,35 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline
-                            (   
-                            )
-                            external
-                            pure
-                            returns(bool success, uint256 votes)
-    {
-        return (success, 0);
-    }
+    function registerAirline (address airline) external returns(bool, bool) {
+      require(airline != address(0), "'account' must be a valid address.");
+      require(!flightSuretyData.getAirlineRegistrationStatus(airline), "Airline is already registered");
+      require(flightSuretyData.getAirlineOperatingStatus(msg.sender), "Caller airline is not operational");
 
+      uint multicall_Length = flightSuretyData.multiCallsLength();
+
+      if (multicall_Length < M){
+        flightSuretyData._registerAirline(airline, false);
+        emit RegisterAirline(airline);
+        return(true,false);
+      } else {
+        if(vote_status) {
+          uint voteCount = flightSuretyData.getVoteCounter(airline);
+          if (voteCount >= multicall_Length/2) {
+            flightSuretyData._registerAirline(airline, false);
+            vote_status = false;
+            flightSuretyData.resetVoteCounter(airline);
+            emit RegisterAirline(airline);
+            return(true, true);     
+          } else {
+            flightSuretyData.resetVoteCounter(airline);
+            return(false, true); 
+          }
+        } else {
+          return(false,false);     
+        }
+      }
+    }
 
    /**
     * @dev Register a future flight for insuring.
