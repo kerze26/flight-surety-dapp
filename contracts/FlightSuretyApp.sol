@@ -96,7 +96,6 @@ contract FlightSuretyApp {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-  
    /**
     * @dev Add an airline to the registration queue
     *
@@ -139,7 +138,12 @@ contract FlightSuretyApp {
     * @dev Called after oracle has updated flight status
     *
     */
-    function processFlightStatus(address airline, string memory flight, uint256 timestamp, uint8 statusCode) internal pure {
+    function processFlightStatus(
+      address airline, 
+      string memory flight, 
+      uint256 timestamp, 
+      uint8 statusCode
+      ) internal pure {
       if (statusCode == STATUS_CODE_LATE_AIRLINE) {
         flightSuretyData.creditInsurees(airline, flight, timestamp);
       }
@@ -215,7 +219,13 @@ contract FlightSuretyApp {
     // For the response to be accepted, there must be a pending request that is open
     // and matches one of the three Indexes randomly assigned to the oracle at the
     // time of registration (i.e. uninvited oracles are not welcome)
-    function submitOracleResponse (uint8 index, address airline, string flight, uint256 timestamp, uint8 statusCode) external {
+    function submitOracleResponse (
+      uint8 index, 
+      address airline, 
+      string flight, 
+      uint256 timestamp, 
+      uint8 statusCode
+      ) external {
         require((oracles[msg.sender].indexes[0] == index) ||
           (oracles[msg.sender].indexes[1] == index) ||
           (oracles[msg.sender].indexes[2] == index), "Index does not match oracle request");
@@ -238,27 +248,18 @@ contract FlightSuretyApp {
     }
 
     // Returns array of three non-duplicating integers from 0-9
-    function generateIndexes
-                            (                       
-                                address account         
-                            )
-                            internal
-                            returns(uint8[3])
-    {
-        uint8[3] memory indexes;
-        indexes[0] = getRandomIndex(account);
-        
-        indexes[1] = indexes[0];
-        while(indexes[1] == indexes[0]) {
-            indexes[1] = getRandomIndex(account);
-        }
-
-        indexes[2] = indexes[1];
-        while((indexes[2] == indexes[0]) || (indexes[2] == indexes[1])) {
-            indexes[2] = getRandomIndex(account);
-        }
-
-        return indexes;
+    function generateIndexes (address account) internal returns(uint8[3]) {
+      uint8[3] memory indexes;
+      indexes[0] = getRandomIndex(account);
+      indexes[1] = indexes[0];
+      while(indexes[1] == indexes[0]) {
+        indexes[1] = getRandomIndex(account);
+      }
+      indexes[2] = indexes[1];
+      while((indexes[2] == indexes[0]) || (indexes[2] == indexes[1])) {
+          indexes[2] = getRandomIndex(account);
+      }
+      return indexes;
     }
 
     // Returns array of three non-duplicating integers from 0-9
