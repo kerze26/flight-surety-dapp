@@ -11,17 +11,12 @@ import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 /************************************************** */
 contract FlightSuretyApp {
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
-    using SafeMath for uint;
-
-    FlightSuretyData flightSuretyData;
 
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
-    uint constant M = 4;
-    bool private vote_status = false;
 
-    // Flight status codeesls
+    // Flight status codees
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
     uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
@@ -29,8 +24,7 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
-    address private contractOwner;          // Account used to deploy contract
-    bool private operational = true;
+    address private contractOwner; // Account used to deploy contract
 
     struct Flight {
         bool isRegistered;
@@ -40,16 +34,7 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
 
-
-    /********************************************************************************************/
-    /*                                       EVENT DEFINITIONS                                  */
-    /********************************************************************************************/
-    event RegisterAirline(address account);
-    event PurchaseInsurance(address airline, address sender, uint256 amount);
-    event CreditInsurees(address airline, address passenger, uint256 credit);  
-    event FundedLines(address funded, uint256 value);
-    event Withdraw(address sender,uint256 amount);
-    event SubmitOracleResponse(uint8 indexes, address airline, string flight, uint256 timestamp, uint8 statusCode);
+    FlightSuretyData flightSuretyData;
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -66,7 +51,7 @@ contract FlightSuretyApp {
     modifier requireIsOperational() 
     {
          // Modify to call data contract's status
-        require(true, "Contract is currently not operational");  
+        require(isOperational(), "Contract is currently not operational");  
         _;  // All modifiers require an "_" which indicates where the function body will be added
     }
 
@@ -87,19 +72,21 @@ contract FlightSuretyApp {
     * @dev Contract constructor
     *
     */
-    constructor(address dataContract) public {
-        contractOwner = msg.sender;
-        flightSuretyData = FlightSuretyData(dataContract);
-        flightSuretyData._registerAirline(contractOwner, true);
-        emit RegisterAirline(contractOwner);
+    constructor (address dataContract) public {
+      contractOwner = msg.sender;
+      flightSuretyData = FlightSuretyData(dataContract);
     }
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() public returns(bool) {
-        return operational;
+    function isOperational() 
+                            public 
+                            pure 
+                            returns(bool) 
+    {
+        return true;  // Modify to call data contract's status
     }
 
     /********************************************************************************************/
@@ -111,35 +98,16 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline (address airline) external returns(bool, bool) {
-      require(airline != address(0), "'account' must be a valid address.");
-      require(!flightSuretyData.getAirlineRegistrationStatus(airline), "Airline is already registered");
-      require(flightSuretyData.getAirlineOperatingStatus(msg.sender), "Caller airline is not operational");
-
-      uint multicall_Length = flightSuretyData.multiCallsLength();
-
-      if (multicall_Length < M){
-        flightSuretyData._registerAirline(airline, false);
-        emit RegisterAirline(airline);
-        return(true,false);
-      } else {
-        if(vote_status) {
-          uint voteCount = flightSuretyData.getVoteCounter(airline);
-          if (voteCount >= multicall_Length/2) {
-            flightSuretyData._registerAirline(airline, false);
-            vote_status = false;
-            flightSuretyData.resetVoteCounter(airline);
-            emit RegisterAirline(airline);
-            return(true, true);     
-          } else {
-            flightSuretyData.resetVoteCounter(airline);
-            return(false, true); 
-          }
-        } else {
-          return(false,false);     
-        }
-      }
+    function registerAirline
+                            (   
+                            )
+                            external
+                            pure
+                            returns(bool success, uint256 votes)
+    {
+        return (success, 0);
     }
+
 
    /**
     * @dev Register a future flight for insuring.
