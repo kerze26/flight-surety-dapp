@@ -101,7 +101,7 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline (address newAirline) external pure returns(bool success, uint256 votes) {
+    function registerAirline(address newAirline) external pure returns(bool success, uint256 votes) {
       if (airlines[newAirline].exists) {
         require(airline[newAirline].voters[msg.sender] != 1, "This user has already registered this airline once.");
         airlines[newAirline].voters[msg.sender] = 1;
@@ -117,57 +117,43 @@ contract FlightSuretyApp {
       return (airline[newAirline].registered = airline[newAirline].votes);
     }
 
+    function fundAirline() public payable {
+      return flightSuretyData.fundAirline(msg.sender, msg.value);
+    }
+
    /**
     * @dev Register a future flight for insuring.
     *
     */  
-    function registerFlight
-                                (
-                                )
-                                external
-                                pure
-    {
-
+    function registerFlight(address airline, string flight, uint256 timestamp) external pure {
+      bytes32 key = keccak256(abi.encodePacked(airline, flight, timestamp));
+      flights[key] = Flight(true, flight, STATUS_CODE_UNKNOWN, timestamp, airline);
     }
-    
+
+    function isFlightRegistered(address airline, string flight, uint256 timestamp) public returns(bool) {
+      bytes32 key = keccak256(abi.encodePacked(airline, flight, timestamp));
+      return flights[key].isRegistered; 
+    }
+
    /**
     * @dev Called after oracle has updated flight status
     *
-    */  
-    function processFlightStatus
-                                (
-                                    address airline,
-                                    string memory flight,
-                                    uint256 timestamp,
-                                    uint8 statusCode
-                                )
-                                internal
-                                pure
-    {
+    */
+    function processFlightStatus(address airline, string memory flight, uint256 timestamp, uint8 statusCode) internal pure {
+      if (statusCode == STATUS_CODE_LATE_AIRLINE) {
+        flightSuretyData.creditInsurees(airline, flight, timestamp);
+      }
     }
 
-
     // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus
-                        (
-                            address airline,
-                            string flight,
-                            uint256 timestamp                            
-                        )
-                        external
-    {
+    function fetchFlightStatus (address airline,string flight,uint256 timestamp) external {
         uint8 index = getRandomIndex(msg.sender);
 
         // Generate a unique key for storing the request
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
-        oracleResponses[key] = ResponseInfo({
-                                                requester: msg.sender,
-                                                isOpen: true
-                                            });
-
+        oracleResponses[key] = ResponseInfo({requester: msg.sender,isOpen: true});
         emit OracleRequest(index, airline, flight, timestamp);
-    } 
-
+    }
 
 // region ORACLE MANAGEMENT
 
@@ -180,10 +166,9 @@ contract FlightSuretyApp {
     // Number of oracles that must respond for valid status
     uint256 private constant MIN_RESPONSES = 3;
 
-
     struct Oracle {
-        bool isRegistered;
-        uint8[3] indexes;        
+      bool isRegistered;
+      uint8[3] indexes;        
     }
 
     // Track all registered oracles
@@ -191,11 +176,12 @@ contract FlightSuretyApp {
 
     // Model for responses from oracles
     struct ResponseInfo {
-        address requester;                              // Account that requested status
-        bool isOpen;                                    // If open, oracle responses are accepted
-        mapping(uint8 => address[]) responses;          // Mapping key is the status code reported
-                                                        // This lets us group responses and identify
-                                                        // the response that majority of the oracles
+      address requester; // Account that requested status
+      bool isOpen; // If open, oracle responses are accepted
+      mapping(uint8 => address[]) responses; 
+      // Mapping key is the status code reported
+      // This lets us group responses and identify
+      // the response that majority of the oracles
     }
 
     // Track all oracle responses
